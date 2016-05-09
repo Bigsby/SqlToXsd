@@ -1,9 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Xml;
-using static MSDatabaseToXsd.XmlWriterSchemaExtentions;
+using static SqlToXsd.XmlWriterSchemaExtentions;
 
-namespace MSDatabaseToXsd
+namespace SqlToXsd
 {
     public static class SchemaWriter
     {

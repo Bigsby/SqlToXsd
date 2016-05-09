@@ -1,7 +1,7 @@
 ﻿using System.Threading.Tasks;
 using System.Xml;
 
-namespace MSDatabaseToXsd
+namespace SqlToXsd
 {
     public static class XmlWriterSchemaExtentions
     {

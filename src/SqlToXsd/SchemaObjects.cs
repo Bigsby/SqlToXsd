@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace MSDatabaseToXsd
+namespace SqlToXsd
 {
     public class Schema
     {

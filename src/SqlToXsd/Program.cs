@@ -2,7 +2,7 @@
 using System.Linq;
 using static System.Console;
 
-namespace MSDatabaseToXsd
+namespace SqlToXsd
 {
     class Program
     {
