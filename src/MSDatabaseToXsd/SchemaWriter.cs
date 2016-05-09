@@ -11,7 +11,8 @@ namespace MSDatabaseToXsd
         private static XmlWriterSettings _xmlSettings = new XmlWriterSettings
         {
             Indent = true,
-            NamespaceHandling = NamespaceHandling.OmitDuplicates
+            NamespaceHandling = NamespaceHandling.OmitDuplicates,
+            Async = true
         };
         #endregion
 
