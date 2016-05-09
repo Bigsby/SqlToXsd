@@ -80,7 +80,7 @@ namespace MSDatabaseToXsd
             WriteLine($"\t{name} connectionstring schemaId dataSetName targetFile [foreignKeys]");
             WriteLine();
             WriteLine("Example:");
-            WriteLine($"\t{name} server=.\\sqexpress;database=DatabaseName;uid=sa;pwd=password OmeviewManagementSchema TheDataSet TheSchema.xsd [f]");
+            WriteLine($"\t{name} server=.\\sqexpress;database=DatabaseName;uid=sa;pwd=password theSchema theDataSet theSchema.xsd [f]");
         }
         #endregion
     }
