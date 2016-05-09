@@ -1,12 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
+using System.Threading.Tasks;
 
 namespace MSDatabaseToXsd
 {
     public static class SchemaReader
     {
         public static Schema ReadSchema(string connectionString, bool addForeignKeys)
+        {
+            return ReadSchemaAsync(connectionString, addForeignKeys).Result;
+        }
+
+        public static async Task<Schema> ReadSchemaAsync(string connectionString, bool addForeignKeys)
         {
             var tables = new List<Table>();
             var primaryKeys = new List<PrimaryKey>();
@@ -16,7 +22,7 @@ namespace MSDatabaseToXsd
             {
                 conn.Open();
 
-                CallDatabase(conn, "SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE'", reader =>
+                await CallDatabase(conn, "SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE'", reader =>
                     tables.Add(new Table
                     {
                         Name = reader.GetString(2)
@@ -26,7 +32,7 @@ namespace MSDatabaseToXsd
                 foreach (var table in tables)
                 {
                     var columns = new List<Column>();
-                    CallDatabase(conn, $"SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '{table.Name}'", reader =>
+                    await CallDatabase(conn, $"SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '{table.Name}'", reader =>
                         columns.Add(new Column
                         {
                             Name = reader.GetString(3),
@@ -37,7 +43,7 @@ namespace MSDatabaseToXsd
                     );
                     table.Columns = columns;
 
-                    CallDatabase(conn, $"sp_pkeys '{table.Name}'", reader =>
+                    await CallDatabase(conn, $"sp_pkeys '{table.Name}'", reader =>
                         primaryKeys.Add(new PrimaryKey
                         {
                             Table = table.Name,
@@ -47,7 +53,7 @@ namespace MSDatabaseToXsd
                     );
 
                     if (addForeignKeys)
-                        CallDatabase(conn, $"sp_fkeys '{table.Name}'", reader =>
+                        await CallDatabase(conn, $"sp_fkeys '{table.Name}'", reader =>
                             foreignKeys.Add(new ForeignKey
                             {
                                 PrimaryKeyTable = reader.GetString(2),
@@ -70,12 +76,12 @@ namespace MSDatabaseToXsd
                 ForeignKeys = foreignKeys
             };
         }
-            
-        private static void CallDatabase(SqlConnection conn, string commandString, Action<SqlDataReader> process)
+
+        private static async Task CallDatabase(SqlConnection conn, string commandString, Action<SqlDataReader> process)
         {
             using (var command = new SqlCommand(commandString, conn))
             using (var reader = command.ExecuteReader())
-                while (reader.Read())
+                while (await reader.ReadAsync())
                     process(reader);
         }
     }

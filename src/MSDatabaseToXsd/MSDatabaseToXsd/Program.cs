@@ -6,6 +6,7 @@ namespace MSDatabaseToXsd
 {
     class Program
     {
+        #region Parameter fields
         private const int _baseParametersCount = 4;
         private const int _extraParametersCount = 1;
 
@@ -17,9 +18,18 @@ namespace MSDatabaseToXsd
             "\\help"
         };
 
+        private static string[] _foreignKeysParameters = new[]
+        {
+            "foreignkeys",
+            "-foreignKeys",
+            "fk",
+            "-fk"
+        }; 
+        #endregion
+
         static void Main(string[] args)
         {
-            if (args.Length == 1 && _helpParameters.Contains(args[0]))
+            if (args.Length == 1 && _helpParameters.Contains(args[0].ToLowerInvariant()))
             {
                 ShowUsage();
                 return;
@@ -40,7 +50,11 @@ namespace MSDatabaseToXsd
 
                 var schema = SchemaReader.ReadSchema(connectionString, addForeignKeys);
 
-                WriteLine($"{schema.Tables.Count()} tables found.");
+                WriteLine("Found:");
+                WriteLine($"{schema.Tables.Count()} Tables.");
+                WriteLine($"{schema.PrimaryKeys.Count()} Primary Keys.");
+                WriteLine($"{schema.ForeignKeys.Count()} Foreign Keys.");
+                WriteLine();
                 WriteLine("Writing schema to file...");
 
                 SchemaWriter.WriteSchema(schema, targetFile, schameId, dataSetName, addForeignKeys);
@@ -61,7 +75,7 @@ namespace MSDatabaseToXsd
             if (args.Length == _baseParametersCount)
                 return false;
 
-            return args[_baseParametersCount] == "f" || args[_baseParametersCount] == "foreignKeys";
+            return _foreignKeysParameters.Contains(args[_baseParametersCount].ToLowerInvariant());
         }
 
         private static void ShowParametersError()
@@ -80,7 +94,7 @@ namespace MSDatabaseToXsd
             WriteLine($"\t{name} connectionstring schemaId dataSetName targetFile [foreignKeys]");
             WriteLine();
             WriteLine("Example:");
-            WriteLine($"\t{name} server=.\\sqexpress;database=DatabaseName;uid=sa;pwd=password theSchema theDataSet theSchema.xsd [f]");
+            WriteLine($"\t{name} server=.\\sqlexpress;database=DatabaseName;uid=sa;pwd=password theSchema theDataSet theSchema.xsd [f]");
         }
         #endregion
     }

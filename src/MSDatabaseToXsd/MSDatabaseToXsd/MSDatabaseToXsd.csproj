@@ -48,7 +48,7 @@
     <Compile Include="SchemaObjects.cs" />
     <Compile Include="SchemaReader.cs" />
     <Compile Include="SchemaWriter.cs" />
-    <Compile Include="XmlWriterExtentions.cs" />
+    <Compile Include="XmlWriterSchemaExtentions.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

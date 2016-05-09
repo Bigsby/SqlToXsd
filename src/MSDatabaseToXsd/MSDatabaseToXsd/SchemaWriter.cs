@@ -1,115 +1,152 @@
 ﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 using System.Xml;
-using static MSDatabaseToXsd.XmlWriterExtensions;
+using static MSDatabaseToXsd.XmlWriterSchemaExtentions;
 
 namespace MSDatabaseToXsd
 {
     public static class SchemaWriter
     {
-        public static void WriteSchema(Schema schema, string filePath, string schemaId, string dataSetName, bool addForeignKeys)
+        #region Xml Writer Settings
+        private static XmlWriterSettings _xmlSettings = new XmlWriterSettings
         {
-            using (var writer = XmlWriter.Create(filePath, new XmlWriterSettings
+            Indent = true,
+            NamespaceHandling = NamespaceHandling.OmitDuplicates
+        };
+        #endregion
+
+        #region Public Methods
+        public static async Task WriteSchemaAsync(Schema schema, string filePath, string schemaId, string dataSetName, bool addForeignKeys)
+        {
+            using (var writer = XmlWriter.Create(filePath, _xmlSettings))
             {
-                Indent = true,
-                NamespaceHandling = NamespaceHandling.OmitDuplicates
-            }))
-            {
-                writer.WriteStartElement(SchemaNamespacePrefix, "schema", SchemaNamespace);
-                writer.WriteAttributeString("xmlns", $"http://tempuri.org/{dataSetName}.xsd");
-                writer.WriteAttributeString("xmlns", "mstns", null, $"http://tempuri.org/{dataSetName}.xsd");
-                writer.WriteAttributeString("targetNamespace", $"http://tempuri.org/{dataSetName}.xsd");
-                writer.WriteAttributeString("elementFormDefault", "qualified");
-                writer.WriteAttributeString("id", schemaId);
+                await writer.WriteStartElementAsync(SchemaNamespacePrefix, "schema", SchemaNamespace);
+                await writer.WriteAttributeStringAsync("xmlns", $"http://tempuri.org/{dataSetName}.xsd");
+                await writer.WriteXmlNsAsync("mstns", $"http://tempuri.org/{dataSetName}.xsd");
+                await writer.WriteAttributeStringAsync("targetNamespace", $"http://tempuri.org/{dataSetName}.xsd");
+                await writer.WriteAttributeStringAsync("elementFormDefault", "qualified");
+                await writer.WriteAttributeStringAsync("id", schemaId);
                 if (addForeignKeys)
-                    writer.WriteAttributeString("xmlns", MetadataNamespacePrefix, null, MetadataNamespace);
+                    await writer.WriteXmlNsAsync(MetadataNamespacePrefix, MetadataNamespace);
 
-                WriteDataSet(writer, dataSetName, schema, addForeignKeys);
+                await WriteDataSetAsync(writer, dataSetName, schema, addForeignKeys);
 
-                writer.WriteEndElement(); // xs:schema
+                if (addForeignKeys)
+                    await WriteForeignKeysAsync(writer, schema.ForeignKeys);
+
+                await writer.WriteEndElementAsync(); // xs:schema
             }
         }
 
-        private static void WriteDataSet(XmlWriter writer, string dataSetName, Schema schema, bool isMetadataNamespaceDefined)
+        public static void WriteSchema(Schema schema, string filePath, string schemaId, string dataSetName, bool addForeignKeys)
         {
-            writer.WriteStartSchemaElement("element");
-            writer.WriteAttributeString("name", dataSetName);
+            WriteSchemaAsync(schema, filePath, schemaId, dataSetName, addForeignKeys).Wait();
+        }
+        #endregion
 
-            writer.WriteStartSchemaElement("complexType");
+        #region Private Methods
+        private static async Task WriteDataSetAsync(XmlWriter writer, string dataSetName, Schema schema, bool isMetadataNamespaceDefined)
+        {
+            await writer.WriteStartSchemaElementAsync("element");
+            await writer.WriteAttributeStringAsync("name", dataSetName);
+
+            await writer.WriteStartSchemaElementAsync("complexType");
 
             foreach (var table in schema.Tables)
-                WriteTable(writer, table);
+                await WriteTableAsync(writer, table);
 
-            writer.WriteEndElement(); // complextType
+            await writer.WriteEndElementAsync(); // complextType
 
             foreach (var primaryKey in schema.PrimaryKeys)
-                WritePrimaryKey(writer, primaryKey, isMetadataNamespaceDefined);
+                await WritePrimaryKeyAsync(writer, primaryKey, isMetadataNamespaceDefined);
 
-            writer.WriteEndElement(); // DataSet element
+            await writer.WriteEndElementAsync(); // DataSet element
         }
 
-        private static void WriteTable(XmlWriter writer, Table table)
+        private static async Task WriteTableAsync(XmlWriter writer, Table table)
         {
-            writer.WriteStartSchemaElement("element");
-            writer.WriteAttributeString("name", table.Name);
+            await writer.WriteStartSchemaElementAsync("element");
+            await writer.WriteAttributeStringAsync("name", table.Name);
 
-            writer.WriteStartSchemaElement("complexType");
-            writer.WriteStartSchemaElement("sequence");
+            await writer.WriteStartSchemaElementAsync("complexType");
+            await writer.WriteStartSchemaElementAsync("sequence");
 
             foreach (var column in table.Columns)
-                WriteColumn(writer, column);
+                await WriteColumnAsync(writer, column);
 
-            writer.WriteEndElement(); // sequence
-            writer.WriteEndElement(); // complexType
+            await writer.WriteEndElementAsync(); // sequence
+            await writer.WriteEndElementAsync(); // complexType
 
-            writer.WriteEndElement(); // element
+            await writer.WriteEndElementAsync(); // element
         }
 
-        private static void WriteColumn(XmlWriter writer, Column column)
+        private static async Task WriteColumnAsync(XmlWriter writer, Column column)
         {
-            writer.WriteStartSchemaElement("element");
-            writer.WriteAttributeString("name", column.Name);
+            await writer.WriteStartSchemaElementAsync("element");
+            await writer.WriteAttributeStringAsync("name", column.Name);
 
             if (!column.Nullable)
-                writer.WriteAttributeString("minOccurs", "1");
+                await writer.WriteAttributeStringAsync("minOccurs", "1");
 
             var schemaDataType = SchemaNamespacePrefix + ":" + ConvertDataType(column.DataType);
 
             if (column.MaxLength.HasValue && column.MaxLength != -1)
             {
-                writer.WriteStartSchemaElement("simpleType");
+                await writer.WriteStartSchemaElementAsync("simpleType");
 
-                writer.WriteStartSchemaElement("restriction");
-                writer.WriteAttributeString("base", schemaDataType);
+                await writer.WriteStartSchemaElementAsync("restriction");
+                await writer.WriteAttributeStringAsync("base", schemaDataType);
 
-                writer.WriteStartSchemaElement("maxLength");
-                writer.WriteAttributeString("value", column.MaxLength.ToString());
+                await writer.WriteStartSchemaElementAsync("maxLength");
+                await writer.WriteAttributeStringAsync("value", column.MaxLength.ToString());
 
-                writer.WriteEndElement(); // maxLength
-                writer.WriteEndElement(); // restriction
-                writer.WriteEndElement(); // simpleType
+                await writer.WriteEndElementAsync(); // maxLength
+                await writer.WriteEndElementAsync(); // restriction
+                await writer.WriteEndElementAsync(); // simpleType
             }
-            else writer.WriteAttributeString("type", schemaDataType);
+            else await writer.WriteAttributeStringAsync("type", schemaDataType);
 
-            writer.WriteEndElement(); // element
+            await writer.WriteEndElementAsync(); // element
         }
 
-        private static void WritePrimaryKey(XmlWriter writer, PrimaryKey primaryKey, bool isMetadataNamespaceDefined)
+        private static async Task WritePrimaryKeyAsync(XmlWriter writer, PrimaryKey primaryKey, bool isMetadataNamespaceDefined)
         {
-            writer.WriteStartSchemaElement("unique");
-            writer.WriteAttributeString("name", primaryKey.Name);
+            await writer.WriteStartSchemaElementAsync("unique");
+            await writer.WriteAttributeStringAsync("name", primaryKey.Name);
 
             if (isMetadataNamespaceDefined)
-                writer.WriteMedataAttribute("PrimaryKey", "true");
+                await writer.WriteMedataAttributeAsync("PrimaryKey", "true");
 
-            writer.WriteStartSchemaElement("selector");
-            writer.WriteAttributeString("xpath", $".//mstns:{primaryKey.Table}");
-            writer.WriteEndElement();
+            await writer.WriteStartSchemaElementAsync("selector");
+            await writer.WriteAttributeStringAsync("xpath", $".//mstns:{primaryKey.Table}");
+            await writer.WriteEndElementAsync();
 
-            writer.WriteStartSchemaElement("field");
-            writer.WriteAttributeString("xpath", $"mstns:{primaryKey.Column}");
-            writer.WriteEndElement();
+            await writer.WriteStartSchemaElementAsync("field");
+            await writer.WriteAttributeStringAsync("xpath", $"mstns:{primaryKey.Column}");
+            await writer.WriteEndElementAsync();
 
-            writer.WriteEndElement(); // unique
+            await writer.WriteEndElementAsync(); // unique
+        }
+
+        private static async Task WriteForeignKeysAsync(XmlWriter writer, IEnumerable<ForeignKey> foreignKeys)
+        {
+            await writer.WriteStartSchemaElementAsync("annotation");
+            await writer.WriteStartSchemaElementAsync("appinfo");
+
+            foreach (var foreignKey in foreignKeys)
+            {
+                await writer.WriteStartMetadataElementAsync("Relationship");
+                await writer.WriteAttributeStringAsync("name", foreignKey.Name);
+                await writer.WriteMedataAttributeAsync("parent", foreignKey.PrimaryKeyTable);
+                await writer.WriteMedataAttributeAsync("child", foreignKey.ForeignKeyTable);
+                await writer.WriteMedataAttributeAsync("parentkey", foreignKey.PrimaryKeyColumn);
+                await writer.WriteMedataAttributeAsync("childkey", foreignKey.ForeignKeyColumn);
+
+                await writer.WriteEndElementAsync(); // Relationship
+            }
+
+            await writer.WriteEndElementAsync(); // annotation
+            await writer.WriteEndElementAsync(); // appinfo
         }
 
         private static string ConvertDataType(string dbType)
@@ -154,25 +191,7 @@ namespace MSDatabaseToXsd
 
                 default: return "unknown";
             }
-        }
-
-        private static void WriteForeignKeys(XmlWriter writer, IEnumerable<ForeignKey> foreignKeys)
-        {
-            writer.WriteStartSchemaElement("appinfo");
-
-            foreach (var foreignKey in foreignKeys)
-            {
-                writer.WriteStartMetadataElement("Relationship");
-
-                writer.WriteAttributeString("name", foreignKey.Name);
-                writer.WriteMedataAttribute("parent", foreignKey.PrimaryKeyTable);
-                writer.WriteMedataAttribute("child", foreignKey.ForeignKeyTable);
-                writer.WriteMedataAttribute("parentkey", foreignKey.PrimaryKeyColumn);
-                writer.WriteMedataAttribute("childkey", foreignKey.ForeignKeyColumn);
-
-                writer.WriteEndElement(); // Relationship
-            }
-            writer.WriteEndElement(); // appinfo
-        }
+        } 
+        #endregion
     }
 }
