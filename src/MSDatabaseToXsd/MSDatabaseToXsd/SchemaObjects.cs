@@ -6,6 +6,7 @@ namespace MSDatabaseToXsd
     {
         public IEnumerable<Table> Tables { get; set; }
         public IEnumerable<PrimaryKey> PrimaryKeys { get; set; }
+        public IEnumerable<ForeignKey> ForeignKeys { get; set; }
     }
 
     public class Table
@@ -42,5 +43,15 @@ namespace MSDatabaseToXsd
         {
             return $"{Name}, {Table}, {Column}";
         }
+    }
+
+    public class ForeignKey
+    {
+        public string Name { get; set; }
+        public string PrimaryKeyTable { get; set; }
+        public string PrimaryKeyColumn { get; set; }
+        public string ForeignKeyTable { get; set; }
+        public string ForeignKeyColumn { get; set; }
+        public string PrimaryTableName { get; set; }
     }
 }

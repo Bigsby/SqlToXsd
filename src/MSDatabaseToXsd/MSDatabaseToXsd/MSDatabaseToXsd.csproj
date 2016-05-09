@@ -46,6 +46,8 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SchemaObjects.cs" />
+    <Compile Include="SchemaReader.cs" />
+    <Compile Include="SchemaWriter.cs" />
     <Compile Include="XmlWriterExtentions.cs" />
   </ItemGroup>
   <ItemGroup>
