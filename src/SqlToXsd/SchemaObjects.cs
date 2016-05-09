@@ -4,15 +4,15 @@ namespace SqlToXsd
 {
     public class Schema
     {
-        public IEnumerable<Table> Tables { get; set; }
-        public IEnumerable<PrimaryKey> PrimaryKeys { get; set; }
-        public IEnumerable<ForeignKey> ForeignKeys { get; set; }
+        public Table[] Tables { get; set; }
+        public PrimaryKey[] PrimaryKeys { get; set; }
+        public ForeignKey[] ForeignKeys { get; set; }
     }
 
     public class Table
     {
         public string Name { get; set; }
-        public IEnumerable<Column> Columns { get; set; }
+        public Column[] Columns { get; set; }
 
         public override string ToString()
         {
@@ -37,11 +37,12 @@ namespace SqlToXsd
     {
         public string Name { get; set; }
         public string Table { get; set; }
-        public string Column { get; set; }
+        public string[] Columns { get; set; }
+        //public string Column { get; set; }
 
         public override string ToString()
         {
-            return $"{Name}, {Table}, {Column}";
+            return $"{Name}, {Table}, [{string.Join(",", Columns)}]";
         }
     }
 

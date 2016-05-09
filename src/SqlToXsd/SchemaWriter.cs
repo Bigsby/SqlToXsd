@@ -53,9 +53,14 @@ namespace SqlToXsd
 
             await writer.WriteStartSchemaElementAsync("complexType");
 
+            await writer.WriteStartSchemaElementAsync("choice");
+            await writer.WriteAttributeStringAsync("minOccurs", "0");
+            await writer.WriteAttributeStringAsync("maxOccurs", "unbounded");
+
             foreach (var table in schema.Tables)
                 await WriteTableAsync(writer, table);
 
+            await writer.WriteEndElementAsync(); // choice
             await writer.WriteEndElementAsync(); // complextType
 
             foreach (var primaryKey in schema.PrimaryKeys)
@@ -70,12 +75,12 @@ namespace SqlToXsd
             await writer.WriteAttributeStringAsync("name", table.Name);
 
             await writer.WriteStartSchemaElementAsync("complexType");
-            await writer.WriteStartSchemaElementAsync("sequence");
+            await writer.WriteStartSchemaElementAsync("all");
 
             foreach (var column in table.Columns)
                 await WriteColumnAsync(writer, column);
 
-            await writer.WriteEndElementAsync(); // sequence
+            await writer.WriteEndElementAsync(); // all
             await writer.WriteEndElementAsync(); // complexType
 
             await writer.WriteEndElementAsync(); // element
@@ -86,8 +91,9 @@ namespace SqlToXsd
             await writer.WriteStartSchemaElementAsync("element");
             await writer.WriteAttributeStringAsync("name", column.Name);
 
-            if (!column.Nullable)
-                await writer.WriteAttributeStringAsync("minOccurs", "1");
+            await writer.WriteAttributeStringAsync("minOccurs", column.Nullable ? "0" : "1");
+
+            await writer.WriteAttributeStringAsync("maxOccurs", "1");
 
             var schemaDataType = SchemaNamespacePrefix + ":" + ConvertDataType(column.DataType);
 
@@ -122,9 +128,12 @@ namespace SqlToXsd
             await writer.WriteAttributeStringAsync("xpath", $".//mstns:{primaryKey.Table}");
             await writer.WriteEndElementAsync();
 
-            await writer.WriteStartSchemaElementAsync("field");
-            await writer.WriteAttributeStringAsync("xpath", $"mstns:{primaryKey.Column}");
-            await writer.WriteEndElementAsync();
+            foreach (var column in primaryKey.Columns)
+            {
+                await writer.WriteStartSchemaElementAsync("field");
+                await writer.WriteAttributeStringAsync("xpath", $"mstns:{column}");
+                await writer.WriteEndElementAsync();
+            }
 
             await writer.WriteEndElementAsync(); // unique
         }
@@ -162,22 +171,12 @@ namespace SqlToXsd
                 case "smallint": return "short";
                 case "tinyint": return "unsignedByte";
 
+                case "date":
                 case "timestamp":
                 case "smalldatetime":
                 case "datetime":
-                    return "datetime";
-
-                case "xml":
-                case "uniqueidentifier":
-                case "varchar":
-                case "text":
-                case "sysname":
-                case "sql_variant":
-                case "ntext":
-                case "nchar":
-                case "char":
-                case "nvarchar":
-                    return "string";
+                case "time":
+                    return "dateTime";
 
                 case "smallmoney":
                 case "numeric":
@@ -190,9 +189,20 @@ namespace SqlToXsd
                 case "binary":
                     return "base64Binary";
 
-                default: return "unknown";
+                default:
+                    //case "xml":
+                    //case "uniqueidentifier":
+                    //case "varchar":
+                    //case "text":
+                    //case "sysname":
+                    //case "sql_variant":
+                    //case "ntext":
+                    //case "nchar":
+                    //case "char":
+                    //case "nvarchar":
+                    return "string";
             }
-        } 
+        }
         #endregion
     }
 }

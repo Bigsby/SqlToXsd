@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace SqlToXsd
@@ -41,16 +42,9 @@ namespace SqlToXsd
                             MaxLength = reader.IsDBNull(8) ? (int?)null : reader.GetInt32(8)
                         })
                     );
-                    table.Columns = columns;
+                    table.Columns = columns.ToArray();
 
-                    await CallDatabase(conn, $"sp_pkeys '{table.Name}'", reader =>
-                        primaryKeys.Add(new PrimaryKey
-                        {
-                            Table = table.Name,
-                            Name = reader.GetString(5),
-                            Column = reader.GetString(3)
-                        })
-                    );
+                    await CallDatabase(conn, $"sp_pkeys '{table.Name}'", reader => AddPrimaryKey(primaryKeys, table, reader));
 
                     if (addForeignKeys)
                         await CallDatabase(conn, $"sp_fkeys '{table.Name}'", reader =>
@@ -71,10 +65,28 @@ namespace SqlToXsd
 
             return new Schema
             {
-                Tables = tables,
-                PrimaryKeys = primaryKeys,
-                ForeignKeys = foreignKeys
+                Tables = tables.ToArray(),
+                PrimaryKeys = primaryKeys.ToArray(),
+                ForeignKeys = foreignKeys.ToArray()
             };
+        }
+
+        private static void AddPrimaryKey(IList<PrimaryKey> primaryKeys, Table table, SqlDataReader reader)
+        {
+            var pkName = reader.GetString(5);
+            var columNName = reader.GetString(3);
+
+            var existing = primaryKeys.FirstOrDefault(pk => pk.Name == pkName);
+
+            if (null == existing)
+                primaryKeys.Add(new PrimaryKey
+                {
+                    Table = table.Name,
+                    Name = pkName,
+                    Columns = new[] { columNName }
+                });
+            else
+                existing.Columns = existing.Columns.Union(new[] { columNName }).ToArray();
         }
 
         private static async Task CallDatabase(SqlConnection conn, string commandString, Action<SqlDataReader> process)
