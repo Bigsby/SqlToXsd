@@ -2,7 +2,6 @@
 using System.Linq;
 using static System.Console;
 
-
 namespace MSDatabaseToXsd
 {
     class Program
@@ -74,12 +73,14 @@ namespace MSDatabaseToXsd
 
         private static void ShowUsage()
         {
+            var name = $"{typeof(Program).Namespace}.exe";
+
             WriteLine("»»» MS SQL Database to XSD - Schema generator «««");
             WriteLine("Usage:");
-            WriteLine("\tDatabaseToXsd connectionstring schemaId dataSetName targetFile [foreignKeys]");
+            WriteLine($"\t{name} connectionstring schemaId dataSetName targetFile [foreignKeys]");
             WriteLine();
             WriteLine("Example:");
-            WriteLine("\tDatabaseToXsd server=.\\sqexpress;database=DatabaseName;uid=sa;pwd=password OmeviewManagementSchema TheDataSet TheSchema.xsd [f]");
+            WriteLine($"\t{name} server=.\\sqexpress;database=DatabaseName;uid=sa;pwd=password OmeviewManagementSchema TheDataSet TheSchema.xsd [f]");
         }
         #endregion
     }
