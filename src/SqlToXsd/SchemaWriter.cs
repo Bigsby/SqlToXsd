@@ -97,23 +97,29 @@ namespace SqlToXsd
 
             var schemaDataType = SchemaNamespacePrefix + ":" + ConvertDataType(column.DataType);
 
-            if (column.MaxLength.HasValue && column.MaxLength != -1)
-            {
-                await writer.WriteStartSchemaElementAsync("simpleType");
-
-                await writer.WriteStartSchemaElementAsync("restriction");
-                await writer.WriteAttributeStringAsync("base", schemaDataType);
-
-                await writer.WriteStartSchemaElementAsync("maxLength");
-                await writer.WriteAttributeStringAsync("value", column.MaxLength.ToString());
-
-                await writer.WriteEndElementAsync(); // maxLength
-                await writer.WriteEndElementAsync(); // restriction
-                await writer.WriteEndElementAsync(); // simpleType
-            }
-            else await writer.WriteAttributeStringAsync("type", schemaDataType);
+            if (column.DataType == "uniqueidentifier")
+                await AddRestriction(writer, schemaDataType, "pattern", "^[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{8}$");
+            else if (column.MaxLength.HasValue && column.MaxLength != -1)
+                await AddRestriction(writer, schemaDataType, "maxLength", column.MaxLength.ToString());
+            else
+                await writer.WriteAttributeStringAsync("type", schemaDataType);
 
             await writer.WriteEndElementAsync(); // element
+        }
+
+        private static async Task AddRestriction(XmlWriter writer, string baseType, string restriction, string value)
+        {
+            await writer.WriteStartSchemaElementAsync("simpleType");
+
+            await writer.WriteStartSchemaElementAsync("restriction");
+            await writer.WriteAttributeStringAsync("base", baseType);
+
+            await writer.WriteStartSchemaElementAsync(restriction);
+            await writer.WriteAttributeStringAsync("value", value);
+
+            await writer.WriteEndElementAsync(); // restriction element
+            await writer.WriteEndElementAsync(); // restriction
+            await writer.WriteEndElementAsync(); // simpleType
         }
 
         private static async Task WritePrimaryKeyAsync(XmlWriter writer, PrimaryKey primaryKey, bool isMetadataNamespaceDefined)
