@@ -19,16 +19,17 @@ namespace SqlToXsd
         #region Public Methods
         public static async Task WriteSchemaAsync(Schema schema, string filePath, string schemaId, string dataSetName, bool addForeignKeys)
         {
+            var @namespace = $"http://tempuri.org/{dataSetName}.xsd";
+
             using (var writer = XmlWriter.Create(filePath, _xmlSettings))
             {
                 await writer.WriteStartElementAsync(SchemaNamespacePrefix, "schema", SchemaNamespace);
-                await writer.WriteAttributeStringAsync("xmlns", $"http://tempuri.org/{dataSetName}.xsd");
-                await writer.WriteXmlNsAsync("mstns", $"http://tempuri.org/{dataSetName}.xsd");
-                await writer.WriteAttributeStringAsync("targetNamespace", $"http://tempuri.org/{dataSetName}.xsd");
+                await writer.WriteAttributeStringAsync("xmlns", @namespace);
+                await writer.WriteXmlNsAsync("mstns", @namespace);
+                await writer.WriteAttributeStringAsync("targetNamespace", @namespace);
                 await writer.WriteAttributeStringAsync("elementFormDefault", "qualified");
                 await writer.WriteAttributeStringAsync("id", schemaId);
-                if (addForeignKeys)
-                    await writer.WriteXmlNsAsync(MetadataNamespacePrefix, MetadataNamespace);
+                await writer.WriteXmlNsAsync(MetadataNamespacePrefix, MetadataNamespace);
 
                 await WriteDataSetAsync(writer, dataSetName, schema, addForeignKeys);
 
@@ -98,16 +99,23 @@ namespace SqlToXsd
             var schemaDataType = SchemaNamespacePrefix + ":" + ConvertDataType(column.DataType);
 
             if (column.DataType == "uniqueidentifier")
-                await AddRestriction(writer, schemaDataType, "pattern", "^[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{8}$");
+            {
+                await writer.WriteMedataAttributeAsync("DataType", "System.Guid");
+                await AddSimpleTypeWithRestriction(writer, schemaDataType, "pattern", "^[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$");
+            }
             else if (column.MaxLength.HasValue && column.MaxLength != -1)
-                await AddRestriction(writer, schemaDataType, "maxLength", column.MaxLength.ToString());
+                await AddSimpleTypeWithRestriction(writer, schemaDataType, "maxLength", column.MaxLength.ToString());
             else
+            {
                 await writer.WriteAttributeStringAsync("type", schemaDataType);
+                if (column.IsIdentity)
+                    await writer.WriteMedataAttributeAsync("AutoIncrement", "true");
+            }
 
             await writer.WriteEndElementAsync(); // element
         }
 
-        private static async Task AddRestriction(XmlWriter writer, string baseType, string restriction, string value)
+        private static async Task AddSimpleTypeWithRestriction(XmlWriter writer, string baseType, string restriction, string value)
         {
             await writer.WriteStartSchemaElementAsync("simpleType");
 

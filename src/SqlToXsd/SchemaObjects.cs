@@ -26,6 +26,7 @@ namespace SqlToXsd
         public string DataType { get; set; }
         public int? MaxLength { get; set; }
         public bool Nullable { get; set; }
+        public bool IsIdentity { get; set; }
 
         public override string ToString()
         {

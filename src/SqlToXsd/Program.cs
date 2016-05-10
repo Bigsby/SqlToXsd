@@ -24,7 +24,7 @@ namespace SqlToXsd
             "-foreignKeys",
             "fk",
             "-fk"
-        }; 
+        };
         #endregion
 
         static void Main(string[] args)
@@ -53,7 +53,8 @@ namespace SqlToXsd
                 WriteLine("Found:");
                 WriteLine($"{schema.Tables.Count()} Tables.");
                 WriteLine($"{schema.PrimaryKeys.Count()} Primary Keys.");
-                WriteLine($"{schema.ForeignKeys.Count()} Foreign Keys.");
+                if (addForeignKeys)
+                    WriteLine($"{schema.ForeignKeys.Count()} Foreign Keys.");
                 WriteLine();
                 WriteLine("Writing schema to file...");
 

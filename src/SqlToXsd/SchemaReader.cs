@@ -23,24 +23,26 @@ namespace SqlToXsd
             {
                 conn.Open();
 
-                await CallDatabase(conn, "SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE'", reader =>
+                await CallDatabase(conn, "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE'", reader =>
                     tables.Add(new Table
                     {
-                        Name = reader.GetString(2)
+                        Name = reader.GetString(0)
                     })
-                ); ;
+                );
 
                 foreach (var table in tables)
                 {
                     var columns = new List<Column>();
-                    await CallDatabase(conn, $"SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '{table.Name}'", reader =>
-                        columns.Add(new Column
-                        {
-                            Name = reader.GetString(3),
-                            DataType = reader.GetString(7),
-                            Nullable = reader.GetString(6) == "NO" ? false : true,
-                            MaxLength = reader.IsDBNull(8) ? (int?)null : reader.GetInt32(8)
-                        })
+                    await CallDatabase(conn, $"SELECT COLUMN_NAME, DATA_TYPE, IS_NULLABLE, CHARACTER_MAXIMUM_LENGTH, COLUMNPROPERTY(object_id('{table.Name}'), COLUMN_NAME, 'IsIdentity') AS IS_IDENTITY from INFORMATION_SCHEMA.COLUMNS where TABLE_NAME = '{table.Name}'", 
+                        reader =>
+                            columns.Add(new Column
+                            {
+                                Name = reader.GetString(0),
+                                DataType = reader.GetString(1),
+                                Nullable = reader.GetString(2) == "NO" ? false : true,
+                                MaxLength = reader.IsDBNull(3) ? (int?)null : reader.GetInt32(3),
+                                IsIdentity = reader.GetInt32(4) == 1
+                            })
                     );
                     table.Columns = columns.ToArray();
 
